@@ -24,4 +24,7 @@ jobs:
             git pull origin main
             npm install
             npm run build
-            pm2 restart shopify-app || pm2 start npm --name "shopify-app" -- run start
+            # 删掉旧进程（即使不存在也不报错）并启动新进程
+            pm2 delete shopify-app || true
+            pm2 start ./node_modules/@react-router/serve/dist/cli.js --name "shopify-app" -- ./build/server/index.js
+            pm2 save
