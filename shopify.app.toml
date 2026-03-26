@@ -2,7 +2,8 @@
 
 client_id = "b83faef211551afa7b5c79580162057a"
 name = "test-app"
-application_url = "https://example.com"
+# 加上端口号（如果你 Remix 跑在 3000）
+application_url = "https://xianyili.top" 
 embedded = true
 
 [build]
@@ -13,8 +14,11 @@ include_config_on_deploy = true
 api_version = "2026-04"
 
 [access_scopes]
-# Learn more at https://shopify.dev/docs/apps/tools/cli/configuration#access_scopes
 scopes = "write_products"
 
 [auth]
-redirect_urls = [ "https://example.com/api/auth" ]
+redirect_urls = [ 
+    "https://xianyili.top/auth/callback",
+    "https://xianyili.top/auth/shopify/callback",
+    "https://xianyili.top/api/auth/callback"
+]
