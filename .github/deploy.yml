@@ -1,0 +1,27 @@
+name: Shopify App Auto Deploy
+
+on:
+  push:
+    branches:
+      - main  # 只有推送到 main 分支时才触发。如果你用的是 master，请改为 master
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Deploy to Windows Server via SSH
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.REMOTE_HOST }}
+          username: ${{ secrets.REMOTE_USER }}
+          password: ${{ secrets.REMOTE_PASS }}
+          port: 22
+          script: |
+            cd C:\shopify-app
+            git pull origin main
+            npm install
+            npm run build
+            pm2 restart shopify-app || pm2 start npm --name "shopify-app" -- run start
