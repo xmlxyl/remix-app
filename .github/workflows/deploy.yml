@@ -20,22 +20,21 @@ jobs:
           password: ${{ secrets.REMOTE_PASS }}
           port: 22
           script: |
-            echo "--- Checking directory ---"
+            # 1. 进入目录并强制清理 Git 锁和冲突
             cd /d C:\shopify-app || exit 1
-            
-            echo "--- Pulling latest code ---"
             git config --global --add safe.directory C:/shopify-app
-            git fetch origin main
+            
+            # 2. 强制拉取覆盖（防止服务器本地有文件改动导致 pull 失败）
+            git fetch --all
             git reset --hard origin/main
             
-            echo "--- Installing dependencies ---"
+            # 3. 在 Windows SSH 中，npm 命令必须加 call，否则执行完第一条 npm 就会退出
             call npm install
-            
-            echo "--- Building project ---"
             call npm run build
             
-            echo "--- Restarting PM2 ---"
-            # 尝试通过我们之前成功的 start.cjs 或者直接用路径
+            # 4. 重启 PM2 进程
+            # 确保 pm2 在系统变量中，如果报错，请换成完整路径如 C:\Users\Administrator\AppData\Roaming\npm\pm2.cmd
             pm2 restart shopify-app || pm2 start ./node_modules/@react-router/serve/dist/cli.js --name "shopify-app" -- ./build/server/index.js
             
-            echo "--- Deployment Complete ---"
+            # 5. 验证版本（在 GitHub 日志里打印最后一条提交记录）
+            git log -1
