@@ -20,11 +20,19 @@ jobs:
           password: ${{ secrets.REMOTE_PASS }}
           port: 22
           script: |
-            cd C:\shopify-app
-            git pull origin main
-            npm install
-            npm run build
-            # 删掉旧进程（即使不存在也不报错）并启动新进程
-            pm2 delete shopify-app || true
+            cd /d C:\shopify-app
+            # 解决 Windows 目录下 Git 的权限安全检查问题
+            git config --global --add safe.directory C:/shopify-app
+            
+            # 强制重置本地修改并拉取最新代码
+            git fetch --all
+            git reset --hard origin/main
+            
+            # 执行构建
+            call npm install --production
+            call npm run build
+            
+            # 使用我们之前验证成功的 PM2 启动方式
+            pm2 delete shopify-app || cd .
             pm2 start ./node_modules/@react-router/serve/dist/cli.js --name "shopify-app" -- ./build/server/index.js
             pm2 save
