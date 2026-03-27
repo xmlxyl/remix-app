@@ -20,19 +20,22 @@ jobs:
           password: ${{ secrets.REMOTE_PASS }}
           port: 22
           script: |
-            cd /d C:\shopify-app
-            # 解决 Windows 目录下 Git 的权限安全检查问题
-            git config --global --add safe.directory C:/shopify-app
+            echo "--- Checking directory ---"
+            cd /d C:\shopify-app || exit 1
             
-            # 强制重置本地修改并拉取最新代码
-            git fetch --all
+            echo "--- Pulling latest code ---"
+            git config --global --add safe.directory C:/shopify-app
+            git fetch origin main
             git reset --hard origin/main
             
-            # 执行构建
-            call npm install --production
+            echo "--- Installing dependencies ---"
+            call npm install
+            
+            echo "--- Building project ---"
             call npm run build
             
-            # 使用我们之前验证成功的 PM2 启动方式
-            pm2 delete shopify-app || cd .
-            pm2 start ./node_modules/@react-router/serve/dist/cli.js --name "shopify-app" -- ./build/server/index.js
-            pm2 save
+            echo "--- Restarting PM2 ---"
+            # 尝试通过我们之前成功的 start.cjs 或者直接用路径
+            pm2 restart shopify-app || pm2 start ./node_modules/@react-router/serve/dist/cli.js --name "shopify-app" -- ./build/server/index.js
+            
+            echo "--- Deployment Complete ---"
