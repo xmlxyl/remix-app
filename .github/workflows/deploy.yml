@@ -22,8 +22,11 @@ jobs:
           host: ${{ secrets.REMOTE_HOST }}
           username: ${{ secrets.REMOTE_USER }}
           password: ${{ secrets.REMOTE_PASS }}
+          debug: true
+          request_pty: true
           port: 22
           script: |
+            @echo off
             cd /d C:\shopify-app || (echo "C:\shopify-app not found" && exit 1)
             echo PWD: %cd%
             hostname
