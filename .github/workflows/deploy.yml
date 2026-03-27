@@ -3,41 +3,53 @@ name: Shopify App Auto Deploy
 on:
   push:
     branches:
-      - main  # 只有推送到 main 分支时才触发。如果你用的是 master，请改为 master
+      - main
+  workflow_dispatch:
+
+concurrency:
+  group: shopify-deploy-main
+  cancel-in-progress: true
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
+
     steps:
       - name: Deploy to Windows Server via SSH
-        uses: appleboy/ssh-action@master
+        uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.REMOTE_HOST }}
           username: ${{ secrets.REMOTE_USER }}
           password: ${{ secrets.REMOTE_PASS }}
           port: 22
           script: |
-            # 1. 使用 Windows 原生路径切换方式，并打印当前位置
-            cd /d C:\shopify-app || (echo "Directory not found" && exit 1)
-            echo "Current directory: %cd%"
+            cd /d C:\shopify-app || (echo "C:\shopify-app not found" && exit 1)
+            echo "PWD=%cd%"
 
-            # 2. 解决 Git 权限与认证问题
-            # 这一步非常重要：如果你的 git 是通过 HTTPS 拉取的，SSH 登录可能拿不到凭据
-            git config --global --add safe.directory C:/shopify-app
-            
-            echo "--- Fetching from Git ---"
-            # 如果这一步报错，说明服务器上的 git 没配置好记住密码
-            git fetch --all || (echo "Git fetch failed" && exit 1)
-            git reset --hard origin/main
+            git config --local --add safe.directory C:/shopify-app
 
-            echo "--- Installing & Building ---"
-            # 显式调用 .cmd 后缀可以大幅提高 Windows SSH 的兼容性
-            call npm.cmd install || (echo "NPM Install failed" && exit 1)
-            call npm.cmd run build || (echo "NPM Build failed" && exit 1)
+            echo "--- Sync code ---"
+            git fetch origin main || (echo "git fetch failed" && exit 1)
+            git reset --hard origin/main || (echo "git reset failed" && exit 1)
 
-            echo "--- PM2 Restart ---"
-            # 如果 pm2 命令找不到，请替换为它的绝对路径
-            pm2 restart shopify-app || pm2 start ./node_modules/@react-router/serve/dist/cli.js --name "shopify-app" -- ./build/server/index.js
-            
-            echo "--- Last Commit ---"
+            echo "--- Install & build ---"
+            call npm.cmd ci || (echo "npm ci failed" && exit 1)
+            call npm.cmd run build || (echo "npm build failed" && exit 1)
+
+            echo "--- PM2 (start.cjs) ---"
+            if exist start.cjs (
+              pm2 describe shopify-app >nul 2>&1
+              if errorlevel 1 (
+                pm2 start start.cjs --name shopify-app || (echo "pm2 start failed" && exit 1)
+              ) else (
+                pm2 restart shopify-app || (echo "pm2 restart failed" && exit 1)
+              )
+              pm2 save || (echo "pm2 save failed" && exit 1)
+            ) else (
+              echo "start.cjs not found" && exit 1
+            )
+
+            echo "--- Verify ---"
+            pm2 list
             git log -1 --oneline
