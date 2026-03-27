@@ -23,33 +23,21 @@ jobs:
           username: ${{ secrets.REMOTE_USER }}
           password: ${{ secrets.REMOTE_PASS }}
           port: 22
+          script_stop: true
           script: |
-            cd /d C:\shopify-app || (echo "C:\shopify-app not found" && exit 1)
-            echo "PWD=%cd%"
-
-            git config --local --add safe.directory C:/shopify-app
-
-            echo "--- Sync code ---"
-            git fetch origin main || (echo "git fetch failed" && exit 1)
-            git reset --hard origin/main || (echo "git reset failed" && exit 1)
-
-            echo "--- Install & build ---"
-            call npm.cmd ci || (echo "npm ci failed" && exit 1)
-            call npm.cmd run build || (echo "npm build failed" && exit 1)
-
-            echo "--- PM2 (start.cjs) ---"
-            if exist start.cjs (
-              pm2 describe shopify-app >nul 2>&1
-              if errorlevel 1 (
-                pm2 start start.cjs --name shopify-app || (echo "pm2 start failed" && exit 1)
-              ) else (
-                pm2 restart shopify-app || (echo "pm2 restart failed" && exit 1)
-              )
-              pm2 save || (echo "pm2 save failed" && exit 1)
-            ) else (
-              echo "start.cjs not found" && exit 1
-            )
-
-            echo "--- Verify ---"
-            pm2 list
-            git log -1 --oneline
+            $ErrorActionPreference = "Stop"
+            Set-Location "C:\shopify-app"
+            Write-Host "PWD: $(Get-Location)"
+            Write-Host "Before: $(git rev-parse HEAD)"
+            git fetch origin main
+            git reset --hard origin/main
+            Write-Host "After:  $(git rev-parse HEAD)"
+            npm.cmd ci
+            npm.cmd run build
+            pm2 describe shopify-app *> $null
+            if ($LASTEXITCODE -eq 0) {
+              pm2 restart shopify-app
+            } else {
+              pm2 start start.cjs --name shopify-app
+            }
+            pm2 save
