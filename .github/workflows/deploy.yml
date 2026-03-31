@@ -20,7 +20,7 @@ jobs:
           host: ${{ secrets.REMOTE_HOST }}
           username: ${{ secrets.REMOTE_USER }}
           key: ${{ secrets.SSH_KEY }}
-          port: 22
+          port: 3000
           script: |
             set -e   # 一旦有错误立即退出
 
