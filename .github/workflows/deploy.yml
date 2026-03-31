@@ -24,6 +24,11 @@ jobs:
           script: |
             set -e   # 一旦有错误立即退出
 
+            # ✅ 加载 nvm（关键）
+            export NVM_DIR="$HOME/.nvm"
+            [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
+            nvm use 24.14.1
+            
             echo "📦 进入项目目录"
             cd /root/remix-app
 
