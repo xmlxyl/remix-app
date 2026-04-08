@@ -3,7 +3,7 @@
 client_id = "b83faef211551afa7b5c79580162057a"
 name = "test-app"
 # 加上端口号（如果你 Remix 跑在 3000）
-application_url = "https://xianyili.top" 
+application_url = "https://xianyili.top/remix/" 
 embedded = true
 
 [build]
@@ -17,7 +17,7 @@ scopes = "write_products"
 
 [auth]
 redirect_urls = [ 
-    "https://xianyili.top/auth/callback",
-    "https://xianyili.top/auth/shopify/callback",
-    "https://xianyili.top/api/auth/callback"
+    "https://xianyili.top/remix/auth/callback",
+    "https://xianyili.top/remix/auth/shopify/callback",
+    "https://xianyili.top/remix/api/auth/callback"
 ]
